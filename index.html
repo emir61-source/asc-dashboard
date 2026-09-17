@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASC & Servis Bazlı Dinamik KPI Dashboard</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #3b82f6;
+            --secondary: #0f172a;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 24px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+            color: white;
+            padding: 28px 32px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.3);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            font-size: 14px;
+            opacity: 0.85;
+            margin-top: 4px;
+        }
+
+        .filter-panel {
+            background: var(--card-bg);
+            padding: 20px 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            margin-bottom: 24px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 220px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .filter-control {
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #fff;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .filter-control:focus {
+            border-color: var(--primary-light);
+        }
+
+        .reset-btn {
+            padding: 10px 20px;
+            background: #f1f5f9;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            align-self: flex-end;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            padding: 18px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: transform 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .kpi-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--secondary);
+        }
+
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .chart-card h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 16px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+
+        .table-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+
+        .table-header {
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: #f8fafc;
+        }
+
+        .table-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #f1f5f9;
+            color: var(--secondary);
+            font-weight: 700;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .badge-msc {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-asc {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .perf-high { color: #10b981; font-weight: 700; }
+        .perf-mid { color: #f59e0b; font-weight: 700; }
+        .perf-low { color: #ef4444; font-weight: 700; }
+
+        footer {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>ASC & Servis Bazlı Dinamik KPI Dashboard</h1>
+                <p>İzmir Bölge Performans, NPS ve RRR Analiz Paneli</p>
+            </div>
+        </header>
+
+        <!-- Sadece İl ve Servis Adı Filtre Paneli -->
+        <div class="filter-panel">
+            <div class="filter-group">
+                <label for="cityFilter">İl Seçimi</label>
+                <select id="cityFilter" class="filter-control" onchange="onCityChange()">
+                    <option value="ALL">Tüm İller</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="serviceFilter">Servis Adı</label>
+                <select id="serviceFilter" class="filter-control" onchange="applyFilters()">
+                    <option value="ALL">Tüm Servisler</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="searchInput">Arama</label>
+                <input type="text" id="searchInput" class="filter-control" placeholder="Servis adı veya No..." onkeyup="applyFilters()">
+            </div>
+            <button class="reset-btn" onclick="resetFilters()">Filtreleri Sıfırla</button>
+        </div>
+
+        <!-- KPI Özet Kartları -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-title">Servis Sayısı</div>
+                <div class="kpi-value" id="kpiServiceCount">0</div>
+                <div class="kpi-sub">Aktif Servis</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">IW NPS (%)</div>
+                <div class="kpi-value" id="kpiIwNps" style="color: #10b981;">0%</div>
+                <div class="kpi-sub">Garanti İçi Memnuniyet</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">OW NPS (%)</div>
+                <div class="kpi-value" id="kpiOwNps" style="color: #f59e0b;">0%</div>
+                <div class="kpi-sub">Garanti Dışı Memnuniyet</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">II NPS Genel (%)</div>
+                <div class="kpi-value" id="kpiIiNpsGen" style="color: #3b82f6;">0%</div>
+                <div class="kpi-sub">Genel Montaj NPS</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">II NPS - VD (%)</div>
+                <div class="kpi-value" id="kpiIiNpsVd" style="color: #6366f1;">0%</div>
+                <div class="kpi-sub">Görüntü Sistemleri</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">II NPS - HA (%)</div>
+                <div class="kpi-value" id="kpiIiNpsHa" style="color: #8b5cf6;">0%</div>
+                <div class="kpi-sub">Ev Aletleri</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">II NPS - AC (%)</div>
+                <div class="kpi-value" id="kpiIiNpsAc" style="color: #ec4899;">0%</div>
+                <div class="kpi-sub">Klima Montaj</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">RRR Gen. (%)</div>
+                <div class="kpi-value" id="kpiRrrGen" style="color: #ef4444;">0%</div>
+                <div class="kpi-sub">Tekrarlı Tamir Oranı</div>
+            </div>
+        </div>
+
+        <!-- Grafikler Grid -->
+        <div class="charts-grid">
+            <!-- 1. IW vs OW NPS Aylık Gelişimi -->
+            <div class="chart-card">
+                <h3>IW vs OW NPS Aylık Gelişimi (%)</h3>
+                <div class="chart-container">
+                    <canvas id="iwOwNpsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 2. RRR Aylık Gelişimi -->
+            <div class="chart-card">
+                <h3>RRR (Tekrarlı Tamir) Aylık Gelişimi (%)</h3>
+                <div class="chart-container">
+                    <canvas id="rrrChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 3. II NPS (Montaj) Ürün Grupları Aylık Gelişimi -->
+            <div class="chart-card" style="grid-column: 1 / -1;">
+                <h3>II (Initial Installation) NPS - Ürün Grupları Aylık Gelişimi (%)</h3>
+                <div class="chart-container">
+                    <canvas id="iiNpsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Veri Tablosu -->
+        <div class="table-section">
+            <div class="table-header">
+                <h3>Servis Bazlı Detay KPI Tablosu</h3>
+                <span id="tableRecordCount" style="font-size: 13px; color: var(--text-muted);">0 kayıt gösteriliyor</span>
+            </div>
+            <div class="table-container">
+                <table id="kpiTable">
+                    <thead>
+                        <tr>
+                            <th>ASC No</th>
+                            <th>Servis Adı</th>
+                            <th>İl</th>
+                            <th>Tip</th>
+                            <th>Toplam Hacim</th>
+                            <th>IW NPS (%)</th>
+                            <th>OW NPS (%)</th>
+                            <th>II NPS (%)</th>
+                            <th>II VD (%)</th>
+                            <th>II HA (%)</th>
+                            <th>II AC (%)</th>
+                            <th>RRR Genel (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer>
+            ASC Performance Dashboard &copy; 2026 | Master için Hazırlanmıştır.
+        </footer>
+    </div>
+
+    <script>
+        const rawData = [{"asc_no": "3368518", "asc_name": "ŞENGÖZ ELEKTRONİK", "city": "ANTALYA", "svc_type": "MSC", "iw_vol": 152.0, "ow_vol": 162.0, "inst_vol": 4965.0, "total_vol": 5279.0, "iw_nps_overall": 89.5, "iw_nps_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, -100.0, 100.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [100.0, 100.0, 0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 100.0], "ii_nps_gen_overall": 91.6, "ii_nps_gen_monthly": [88.9, 86.7, 84.0, 90.0, 100.0, 85.0, 97.5, 100.0, 100.0], "ii_nps_vd_overall": 88.2, "ii_nps_vd_monthly": [72.7, 73.3, 84.6, 81.8, 100.0, 89.5, 90.0, 100.0, 100.0], "ii_nps_ha_overall": 96.9, "ii_nps_ha_monthly": [100.0, 100.0, 75.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0], "ii_nps_ac_overall": 92.7, "ii_nps_ac_monthly": [100.0, 100.0, 100.0, 0.0, 100.0, 75.0, 100.0, 100.0, 100.0], "rrr_gen_overall": 10.8, "rrr_gen_monthly": [4.4, 8.3, 2.9, 1.9, 13.3, 20.7, 11.8, 13.7, 15.2], "rrr_vd_overall": 8.6, "rrr_vd_monthly": [0.0, 0.0, 0.0, 3.6, 15.4, 20.0, 6.7, 8.2, 7.0], "rrr_da_overall": 12.0, "rrr_da_monthly": [5.4, 17.6, 3.7, 1.0, 12.4, 22.2, 16.8, 16.1, 20.3]}, {"asc_no": "3368548", "asc_name": "TURKUT TEKNİK", "city": "ANTALYA", "svc_type": "MSC", "iw_vol": 1011.0, "ow_vol": 1710.0, "inst_vol": 7240.0, "total_vol": 9961.0, "iw_nps_overall": 72.5, "iw_nps_monthly": [75.0, 72.7, 85.0, 64.3, 63.6, 70.6, 53.8, 86.2, 72.7], "ow_nps_overall": 55.6, "ow_nps_monthly": [0.0, 75.0, 57.1, 28.6, 100.0, 100.0, 50.0, 40.0, 0.0], "ii_nps_gen_overall": 88.8, "ii_nps_gen_monthly": [91.5, 90.8, 96.4, 100.0, 90.4, 77.4, 76.1, 95.3, 97.1], "ii_nps_vd_overall": 0.0, "ii_nps_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ha_overall": 88.8, "ii_nps_ha_monthly": [91.5, 90.8, 96.4, 100.0, 90.4, 77.4, 76.1, 95.3, 97.1], "ii_nps_ac_overall": 0.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 4.5, "rrr_gen_monthly": [1.3, 0.4, 7.5, 9.7, 9.1, 3.9, 2.8, 3.6, 3.6], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 4.5, "rrr_da_monthly": [1.3, 0.4, 7.5, 9.7, 9.1, 3.9, 2.8, 3.6, 3.6]}, {"asc_no": "3368191", "asc_name": "EMRE ELEKTRONİK", "city": "ANTALYA", "svc_type": "ASC", "iw_vol": 124.0, "ow_vol": 169.0, "inst_vol": 1955.0, "total_vol": 2248.0, "iw_nps_overall": 83.3, "iw_nps_monthly": [100.0, 100.0, 100.0, 75.0, 100.0, 100.0, 50.0, 0.0, 0.0], "ow_nps_overall": 66.7, "ow_nps_monthly": [0.0, 100.0, 100.0, 33.3, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 90.2, "ii_nps_gen_monthly": [100.0, 72.7, 100.0, 100.0, 78.6, 91.3, 92.0, 88.9, 100.0], "ii_nps_vd_overall": 83.3, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, -100.0, 71.4, 100.0, 75.0, 100.0], "ii_nps_ha_overall": 100.0, "ii_nps_ha_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0], "ii_nps_ac_overall": 86.4, "ii_nps_ac_monthly": [100.0, 40.0, 100.0, 100.0, 80.0, 100.0, 81.8, 100.0, 100.0], "rrr_gen_overall": 6.0, "rrr_gen_monthly": [0.0, 0.0, 1.2, 2.2, 1.1, 16.9, 9.2, 6.7, 19.4], "rrr_vd_overall": 1.2, "rrr_vd_monthly": [0.0, 0.0, 0.0, 5.6, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 6.5, "rrr_da_monthly": [0.0, 0.0, 1.3, 1.7, 1.4, 19.0, 9.8, 6.7, 20.0]}, {"asc_no": "9355523", "asc_name": "EYMEN TEKNİK", "city": "ANTALYA", "svc_type": "MSC", "iw_vol": 153.0, "ow_vol": 313.0, "inst_vol": 2577.0, "total_vol": 3043.0, "iw_nps_overall": 56.5, "iw_nps_monthly": [-100.0, 50.0, 50.0, 100.0, 100.0, 60.0, 0.0, 50.0, 100.0], "ow_nps_overall": 0.0, "ow_nps_monthly": [100.0, -100.0, 100.0, 0.0, 0.0, 0.0, -100.0, 0.0, 0.0], "ii_nps_gen_overall": 76.0, "ii_nps_gen_monthly": [88.2, 100.0, 88.2, 84.6, 61.1, 72.4, 74.2, 75.0, 40.0], "ii_nps_vd_overall": 87.9, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 80.0, 50.0, 60.0, 100.0, 100.0, 50.0], "ii_nps_ha_overall": 75.5, "ii_nps_ha_monthly": [100.0, 100.0, 66.7, 80.0, 100.0, 69.2, 75.0, 57.1, 50.0], "ii_nps_ac_overall": 60.3, "ii_nps_ac_monthly": [66.7, 100.0, 100.0, 100.0, 37.5, 53.8, 60.0, 57.1, 25.0], "rrr_gen_overall": 9.2, "rrr_gen_monthly": [11.8, 4.2, 7.4, 22.2, 11.4, 8.9, 11.0, 4.8, 1.8], "rrr_vd_overall": 11.0, "rrr_vd_monthly": [4.2, 0.0, 0.0, 87.5, 11.5, 0.0, 0.0, 33.3, 0.0], "rrr_da_overall": 8.9, "rrr_da_monthly": [14.1, 4.8, 7.9, 12.7, 11.3, 9.7, 11.8, 4.1, 2.0]}, {"asc_no": "8227618", "asc_name": "MANAVGAT SOĞUTMA", "city": "ANTALYA", "svc_type": "MSC", "iw_vol": 203.0, "ow_vol": 81.0, "inst_vol": 4520.0, "total_vol": 4804.0, "iw_nps_overall": 79.2, "iw_nps_monthly": [100.0, 100.0, 33.3, 100.0, 100.0, 50.0, 75.0, 0.0, 100.0], "ow_nps_overall": 33.3, "ow_nps_monthly": [0.0, 50.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 89.9, "ii_nps_gen_monthly": [91.3, 84.6, 100.0, 93.3, 100.0, 90.2, 89.7, 72.7, 100.0], "ii_nps_vd_overall": 87.7, "ii_nps_vd_monthly": [80.0, 66.7, 100.0, 100.0, 100.0, 71.4, 100.0, 100.0, 100.0], "ii_nps_ha_overall": 89.6, "ii_nps_ha_monthly": [100.0, 100.0, 100.0, 85.7, 100.0, 100.0, 80.0, 50.0, 100.0], "ii_nps_ac_overall": 92.0, "ii_nps_ac_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 90.0, 50.0, 100.0], "rrr_gen_overall": 8.4, "rrr_gen_monthly": [5.7, 2.8, 5.0, 6.0, 11.7, 14.5, 7.3, 11.0, 15.0], "rrr_vd_overall": 6.1, "rrr_vd_monthly": [11.1, 0.0, 6.7, 8.7, 0.0, 0.0, 37.5, 16.7, 0.0], "rrr_da_overall": 9.0, "rrr_da_monthly": [5.1, 4.5, 4.4, 5.0, 12.9, 18.8, 2.1, 10.2, 23.1]}, {"asc_no": "1443761", "asc_name": "ANTEK İKLİMLENDİRME", "city": "ANTALYA", "svc_type": "ASC", "iw_vol": 153.0, "ow_vol": 79.0, "inst_vol": 6122.0, "total_vol": 6354.0, "iw_nps_overall": 65.0, "iw_nps_monthly": [0.0, 0.0, 100.0, 100.0, 0.0, 0.0, 100.0, 80.0, 0.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, 100.0, 100.0, 100.0, 100.0, 0.0], "ii_nps_gen_overall": 79.5, "ii_nps_gen_monthly": [98.4, 85.4, 77.1, 86.4, 87.1, 74.8, 66.7, 77.1, 80.6], "ii_nps_vd_overall": 0.0, "ii_nps_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ha_overall": 0.0, "ii_nps_ha_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ac_overall": 79.5, "ii_nps_ac_monthly": [98.4, 85.4, 77.1, 86.4, 87.1, 74.8, 66.7, 77.1, 80.6], "rrr_gen_overall": 1.6, "rrr_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.8, 1.3, 3.2], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 1.6, "rrr_da_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.8, 1.3, 3.2]}, {"asc_no": "3371268", "asc_name": "BAŞARAN SOĞUTMA", "city": "ANTALYA", "svc_type": "ASC", "iw_vol": 137.0, "ow_vol": 283.0, "inst_vol": 2546.0, "total_vol": 2966.0, "iw_nps_overall": 59.1, "iw_nps_monthly": [50.0, 33.3, 100.0, 33.3, 100.0, 0.0, 60.0, 50.0, 100.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0], "ii_nps_gen_overall": 93.4, "ii_nps_gen_monthly": [80.0, 85.7, 100.0, 81.8, 75.0, 100.0, 97.2, 100.0, 100.0], "ii_nps_vd_overall": 94.3, "ii_nps_vd_monthly": [0.0, 100.0, 100.0, 100.0, 33.3, 100.0, 100.0, 100.0, 100.0], "ii_nps_ha_overall": 86.7, "ii_nps_ha_monthly": [66.7, 71.4, 100.0, 100.0, 100.0, 100.0, 83.3, 100.0, 0.0], "ii_nps_ac_overall": 96.5, "ii_nps_ac_monthly": [100.0, 100.0, 100.0, 60.0, 100.0, 100.0, 100.0, 100.0, 100.0], "rrr_gen_overall": 8.1, "rrr_gen_monthly": [3.9, 4.3, 9.9, 5.0, 9.9, 17.2, 7.3, 11.4, 0.0], "rrr_vd_overall": 8.3, "rrr_vd_monthly": [0.0, 0.0, 0.0, 16.0, 0.0, 0.0, 22.7, 2.9, 0.0], "rrr_da_overall": 8.1, "rrr_da_monthly": [4.2, 5.0, 10.8, 2.1, 10.3, 19.1, 4.7, 14.3, 0.0]}, {"asc_no": "3370659", "asc_name": "OBEN ELEKTRONİK", "city": "AYDIN", "svc_type": "MSC", "iw_vol": 370.0, "ow_vol": 307.0, "inst_vol": 4761.0, "total_vol": 5438.0, "iw_nps_overall": 61.0, "iw_nps_monthly": [50.0, 66.7, 100.0, 100.0, 25.0, 57.1, 60.0, 66.7, 66.7], "ow_nps_overall": 33.3, "ow_nps_monthly": [-100.0, 0.0, 60.0, 0.0, 0.0, 0.0, 100.0, 100.0, 0.0], "ii_nps_gen_overall": 81.9, "ii_nps_gen_monthly": [88.9, 93.3, 89.3, 76.3, 87.5, 76.9, 80.8, 90.5, 43.8], "ii_nps_vd_overall": 84.1, "ii_nps_vd_monthly": [100.0, 100.0, 87.5, 75.0, 77.8, 90.9, 75.0, 33.3, 66.7], "ii_nps_ha_overall": 82.6, "ii_nps_ha_monthly": [88.9, 80.0, 83.3, 81.8, 88.9, 75.0, 100.0, 100.0, 16.7], "ii_nps_ac_overall": 80.4, "ii_nps_ac_monthly": [77.8, 100.0, 100.0, 73.7, 90.9, 73.5, 73.3, 100.0, 57.1], "rrr_gen_overall": 6.1, "rrr_gen_monthly": [1.3, 5.4, 1.8, 2.8, 10.6, 8.7, 9.8, 3.2, 6.6], "rrr_vd_overall": 11.0, "rrr_vd_monthly": [0.0, 0.0, 3.0, 0.0, 9.5, 17.0, 38.9, 0.0, 23.1], "rrr_da_overall": 5.5, "rrr_da_monthly": [1.4, 5.9, 1.6, 3.2, 11.0, 7.4, 8.6, 3.4, 3.2]}, {"asc_no": "4223317", "asc_name": "MERT SOĞUTMA", "city": "AYDIN", "svc_type": "MSC", "iw_vol": 123.0, "ow_vol": 100.0, "inst_vol": 2026.0, "total_vol": 2249.0, "iw_nps_overall": 46.7, "iw_nps_monthly": [75.0, -100.0, 100.0, 0.0, -100.0, 100.0, 50.0, 100.0, 0.0], "ow_nps_overall": 0.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 80.2, "ii_nps_gen_monthly": [80.0, 85.7, 66.7, 81.8, 86.7, 76.9, 90.0, 80.0, 77.8], "ii_nps_vd_overall": 81.4, "ii_nps_vd_monthly": [100.0, 71.4, 75.0, 84.6, 66.7, 100.0, 50.0, 77.8, 100.0], "ii_nps_ha_overall": 87.5, "ii_nps_ha_monthly": [100.0, 100.0, 33.3, 100.0, 100.0, 71.4, 100.0, 100.0, 100.0], "ii_nps_ac_overall": 72.2, "ii_nps_ac_monthly": [20.0, 100.0, 100.0, 50.0, 100.0, 69.2, 100.0, 70.0, 33.3], "rrr_gen_overall": 12.0, "rrr_gen_monthly": [10.8, 0.7, 12.8, 1.0, 5.5, 13.2, 20.1, 21.2, 16.3], "rrr_vd_overall": 3.3, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 12.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 12.8, "rrr_da_monthly": [11.0, 0.7, 13.2, 1.2, 2.1, 13.6, 20.4, 26.7, 16.7]}, {"asc_no": "3463198", "asc_name": "MURAT SOĞUTMA", "city": "AYDIN", "svc_type": "MSC", "iw_vol": 217.0, "ow_vol": 330.0, "inst_vol": 2523.0, "total_vol": 3070.0, "iw_nps_overall": 68.2, "iw_nps_monthly": [100.0, 50.0, 100.0, 100.0, 100.0, 25.0, -100.0, 0.0, 0.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 0.0], "ii_nps_gen_overall": 89.6, "ii_nps_gen_monthly": [88.2, 93.5, 100.0, 84.1, 88.9, 97.7, 50.0, 100.0, 100.0], "ii_nps_vd_overall": 87.3, "ii_nps_vd_monthly": [88.9, 88.2, 100.0, 88.9, 73.3, 100.0, 25.0, 0.0, 0.0], "ii_nps_ha_overall": 97.1, "ii_nps_ha_monthly": [100.0, 100.0, 100.0, 77.8, 100.0, 100.0, 100.0, 100.0, 0.0], "ii_nps_ac_overall": 85.7, "ii_nps_ac_monthly": [80.0, 100.0, 100.0, 82.4, 100.0, 92.3, 50.0, 100.0, 100.0], "rrr_gen_overall": 9.8, "rrr_gen_monthly": [7.3, 9.2, 6.9, 6.3, 11.8, 17.2, 7.6, 14.5, 5.0], "rrr_vd_overall": 18.1, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 18.8, 53.8, 0.0, 0.0, 0.0], "rrr_da_overall": 9.3, "rrr_da_monthly": [7.8, 9.2, 7.0, 6.5, 9.9, 14.5, 7.7, 15.5, 5.4]}, {"asc_no": "8320272", "asc_name": "BAYRAK TEKNİK", "city": "BALIKESİR", "svc_type": "ASC", "iw_vol": 402.0, "ow_vol": 1024.0, "inst_vol": 3736.0, "total_vol": 5162.0, "iw_nps_overall": 74.0, "iw_nps_monthly": [100.0, 90.0, 100.0, 66.7, 100.0, 46.2, 84.2, 66.7, 0.0], "ow_nps_overall": 13.8, "ow_nps_monthly": [100.0, -14.3, 28.6, 0.0, 0.0, 0.0, -33.3, 100.0, 0.0], "ii_nps_gen_overall": 78.4, "ii_nps_gen_monthly": [77.8, 70.6, 100.0, 0.0, 0.0, 0.0, 0.0, 63.2, 100.0], "ii_nps_vd_overall": 78.8, "ii_nps_vd_monthly": [75.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 44.4, 100.0], "ii_nps_ha_overall": 92.3, "ii_nps_ha_monthly": [100.0, 71.4, 100.0, 0.0, 0.0, 0.0, 0.0, 100.0, 100.0], "ii_nps_ac_overall": 53.3, "ii_nps_ac_monthly": [50.0, 25.0, 100.0, 0.0, 0.0, 0.0, 0.0, 33.3, 100.0], "rrr_gen_overall": 2.7, "rrr_gen_monthly": [7.1, 0.0, 0.0, 0.0, 7.0, 6.2, 0.0, 2.0, 0.0], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 2.9, "rrr_da_monthly": [7.2, 0.0, 0.0, 0.0, 7.5, 6.7, 0.0, 2.1, 0.0]}, {"asc_no": "2242210", "asc_name": "İKLİM TEKNİK", "city": "BALIKESİR", "svc_type": "MSC", "iw_vol": 111.0, "ow_vol": 45.0, "inst_vol": 2478.0, "total_vol": 2634.0, "iw_nps_overall": 64.7, "iw_nps_monthly": [100.0, 100.0, 0.0, 100.0, 50.0, 0.0, 83.3, 50.0, 0.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 73.5, "ii_nps_gen_monthly": [100.0, 66.7, 27.3, 58.3, -100.0, 80.0, 69.2, 100.0, 66.7], "ii_nps_vd_overall": 64.7, "ii_nps_vd_monthly": [100.0, 46.2, 33.3, 66.7, 0.0, 60.0, 36.4, 100.0, 33.3], "ii_nps_ha_overall": 73.9, "ii_nps_ha_monthly": [100.0, 81.8, 20.0, 0.0, -100.0, 100.0, 87.5, 100.0, 100.0], "ii_nps_ac_overall": 100.0, "ii_nps_ac_monthly": [100.0, 100.0, 0.0, 100.0, 0.0, 100.0, 100.0, 100.0, 0.0], "rrr_gen_overall": 11.1, "rrr_gen_monthly": [12.1, 19.6, 25.0, 5.7, 0.0, 12.6, 6.9, 3.3, 11.1], "rrr_vd_overall": 7.6, "rrr_vd_monthly": [12.5, 0.0, 0.0, 0.0, 0.0, 6.5, 21.7, 12.5, 0.0], "rrr_da_overall": 12.4, "rrr_da_monthly": [12.0, 25.6, 28.9, 6.7, 0.0, 15.3, 0.0, 0.0, 20.0]}, {"asc_no": "3485206", "asc_name": "DEREN TEKNİK", "city": "İZMİR", "svc_type": "MSC", "iw_vol": 248.0, "ow_vol": 153.0, "inst_vol": 3398.0, "total_vol": 3799.0, "iw_nps_overall": 64.1, "iw_nps_monthly": [80.0, 100.0, 100.0, 33.3, 33.3, 60.0, 33.3, 75.0, 66.7], "ow_nps_overall": -20.0, "ow_nps_monthly": [0.0, -33.3, -100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 67.9, "ii_nps_gen_monthly": [65.0, 60.0, 61.8, 66.7, 72.7, 73.3, 69.4, 69.7, 60.0], "ii_nps_vd_overall": 69.5, "ii_nps_vd_monthly": [63.6, 81.8, 80.0, 54.5, 77.8, 80.0, 38.5, 100.0, 33.3], "ii_nps_ha_overall": 56.3, "ii_nps_ha_monthly": [66.7, 12.5, 25.0, 80.0, 58.8, 50.0, 65.0, 60.0, 66.7], "ii_nps_ac_overall": 80.4, "ii_nps_ac_monthly": [60.0, 83.3, 85.7, 66.7, 100.0, 82.8, 86.2, 63.6, 100.0], "rrr_gen_overall": 10.1, "rrr_gen_monthly": [4.9, 7.2, 12.2, 9.1, 13.0, 17.6, 8.6, 7.6, 9.6], "rrr_vd_overall": 8.4, "rrr_vd_monthly": [0.0, 5.6, 6.7, 17.6, 0.0, 0.0, 0.0, 29.4, 11.1], "rrr_da_overall": 10.2, "rrr_da_monthly": [5.4, 7.3, 12.6, 8.3, 13.2, 19.0, 8.6, 6.3, 9.4]}, {"asc_no": "3463532", "asc_name": "ERTİK SOĞUTMA", "city": "İZMİR", "svc_type": "MSC", "iw_vol": 114.0, "ow_vol": 49.0, "inst_vol": 1513.0, "total_vol": 1676.0, "iw_nps_overall": 80.0, "iw_nps_monthly": [0.0, 100.0, 100.0, 75.0, 50.0, 0.0, 0.0, 100.0, 0.0], "ow_nps_overall": 50.0, "ow_nps_monthly": [0.0, 100.0, -100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 90.1, "ii_nps_gen_monthly": [100.0, 100.0, 100.0, 90.9, 100.0, 75.0, 71.4, 100.0, 66.7], "ii_nps_vd_overall": 87.5, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 66.7, 100.0, 100.0, 33.3, 100.0, 60.0], "ii_nps_ha_overall": 92.3, "ii_nps_ha_monthly": [0.0, 100.0, 100.0, 100.0, 100.0, 33.3, 100.0, 100.0, 100.0], "ii_nps_ac_overall": 100.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 100.0, 0.0, 100.0, 0.0, 100.0, 0.0], "rrr_gen_overall": 17.0, "rrr_gen_monthly": [0.0, 25.7, 12.7, 20.5, 13.7, 19.3, 22.4, 12.8, 0.0], "rrr_vd_overall": 2.8, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 7.1, 0.0, 0.0, 0.0], "rrr_da_overall": 17.8, "rrr_da_monthly": [0.0, 26.2, 12.7, 20.5, 16.7, 20.7, 22.9, 13.1, 0.0]}, {"asc_no": "1493927", "asc_name": "AYMET İKLİMLENDİRME", "city": "İZMİR", "svc_type": "MSC", "iw_vol": 233.0, "ow_vol": 6.0, "inst_vol": 6989.0, "total_vol": 7228.0, "iw_nps_overall": 61.9, "iw_nps_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 28.6, 50.0, 33.3], "ow_nps_overall": 0.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 91.1, "ii_nps_gen_monthly": [100.0, 97.9, 100.0, 95.5, 94.8, 90.6, 88.0, 78.7, 68.0], "ii_nps_vd_overall": 0.0, "ii_nps_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ha_overall": 0.0, "ii_nps_ha_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ac_overall": 91.1, "ii_nps_ac_monthly": [100.0, 97.9, 100.0, 95.5, 94.8, 90.6, 88.0, 78.7, 68.0], "rrr_gen_overall": 17.7, "rrr_gen_monthly": [0.7, 0.0, 7.4, 19.3, 16.7, 17.7, 24.8, 11.5, 41.7], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 17.7, "rrr_da_monthly": [0.7, 0.0, 7.4, 19.3, 16.7, 17.7, 24.8, 11.5, 41.7]}, {"asc_no": "4305594", "asc_name": "CTB BİLİŞİM BİLG.ELK.DAY.TUK.MALLAR", "city": "İZMİR", "svc_type": "MSC", "iw_vol": 0.0, "ow_vol": 73.0, "inst_vol": 8575.0, "total_vol": 8648.0, "iw_nps_overall": 0.0, "iw_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ow_nps_overall": 0.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 82.9, "ii_nps_gen_monthly": [91.8, 80.0, 81.3, 85.3, 74.3, 86.0, 82.1, 84.6, 72.9], "ii_nps_vd_overall": 82.6, "ii_nps_vd_monthly": [97.3, 80.9, 74.1, 94.2, 63.9, 87.7, 91.3, 81.3, 58.3], "ii_nps_ha_overall": 83.2, "ii_nps_ha_monthly": [88.5, 79.2, 91.9, 74.4, 85.3, 84.2, 73.5, 87.0, 87.5], "ii_nps_ac_overall": 0.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 0.0, "rrr_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 0.0, "rrr_da_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, {"asc_no": "4419864", "asc_name": "REİS TEKNİK", "city": "İZMİR", "svc_type": "MSC", "iw_vol": 86.0, "ow_vol": 4.0, "inst_vol": 8972.0, "total_vol": 9062.0, "iw_nps_overall": 75.0, "iw_nps_monthly": [100.0, 100.0, 100.0, -100.0, 100.0, 100.0, 100.0, 50.0, 0.0], "ow_nps_overall": 0.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 88.4, "ii_nps_gen_monthly": [94.9, 91.8, 95.2, 86.7, 88.9, 87.4, 83.1, 83.3, 68.6], "ii_nps_vd_overall": 86.7, "ii_nps_vd_monthly": [98.1, 100.0, 95.0, 93.9, 88.9, 74.2, 81.8, 58.6, 71.4], "ii_nps_ha_overall": 87.9, "ii_nps_ha_monthly": [94.7, 90.4, 94.0, 76.9, 84.0, 84.9, 79.7, 96.4, 68.8], "ii_nps_ac_overall": 92.2, "ii_nps_ac_monthly": [71.4, 75.0, 100.0, 87.5, 100.0, 98.0, 88.6, 100.0, 66.7], "rrr_gen_overall": 10.5, "rrr_gen_monthly": [0.0, 0.0, 20.0, 0.0, 0.0, 28.8, 24.6, 0.0, 0.0], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 11.3, "rrr_da_monthly": [0.0, 0.0, 20.0, 0.0, 0.0, 28.8, 24.6, 0.0, 0.0]}, {"asc_no": "3485222", "asc_name": "DİZAYN ELEKTRONİK", "city": "İZMİR", "svc_type": "MSC", "iw_vol": 165.0, "ow_vol": 133.0, "inst_vol": 3409.0, "total_vol": 3707.0, "iw_nps_overall": 42.4, "iw_nps_monthly": [0.0, 66.7, 100.0, 0.0, -100.0, 0.0, 50.0, 100.0, 100.0], "ow_nps_overall": 37.5, "ow_nps_monthly": [0.0, -33.3, 100.0, 0.0, 100.0, 0.0, 0.0, 100.0, 0.0], "ii_nps_gen_overall": 67.3, "ii_nps_gen_monthly": [74.0, 77.8, 85.7, 92.9, 63.6, 68.2, 55.1, 56.0, 56.3], "ii_nps_vd_overall": 61.3, "ii_nps_vd_monthly": [84.2, 88.9, 71.4, 75.0, -33.3, 100.0, 34.8, 30.0, 66.7], "ii_nps_ha_overall": 77.9, "ii_nps_ha_monthly": [69.2, 84.6, 100.0, 100.0, 100.0, 71.4, 87.5, 100.0, 0.0], "ii_nps_ac_overall": 64.4, "ii_nps_ac_monthly": [60.0, 20.0, 100.0, 100.0, 100.0, 58.3, 53.3, 69.2, 71.4], "rrr_gen_overall": 12.8, "rrr_gen_monthly": [1.3, 6.8, 6.6, 12.7, 14.9, 20.0, 17.6, 14.6, 20.7], "rrr_vd_overall": 12.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 8.3, 85.7, 0.0, 0.0, 18.2, 26.7], "rrr_da_overall": 12.9, "rrr_da_monthly": [1.7, 7.2, 7.0, 13.5, 10.3, 20.3, 20.0, 13.8, 17.3]}, {"asc_no": "3484474", "asc_name": "SEZER SOĞUTMA", "city": "İZMİR", "svc_type": "MSC", "iw_vol": 1.0, "ow_vol": 63.0, "inst_vol": 3767.0, "total_vol": 3831.0, "iw_nps_overall": 0.0, "iw_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 100.0, 0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 92.3, "ii_nps_gen_monthly": [100.0, 95.2, 96.9, 95.6, 100.0, 87.5, 89.1, 75.0, 87.5], "ii_nps_vd_overall": 94.0, "ii_nps_vd_monthly": [100.0, 92.9, 100.0, 100.0, 100.0, 94.7, 91.7, 71.4, 83.3], "ii_nps_ha_overall": 90.1, "ii_nps_ha_monthly": [100.0, 100.0, 92.3, 91.7, 100.0, 81.0, 85.7, 83.3, 100.0], "ii_nps_ac_overall": 0.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 2.1, "rrr_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 8.6, 0.0, 0.0, 0.0], "rrr_vd_overall": 4.7, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 11.1, 0.0, 0.0, 0.0], "rrr_da_overall": 0.0, "rrr_da_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, {"asc_no": "3368462", "asc_name": "OSMANLI ELEKTRONİK", "city": "KÜTAHYA", "svc_type": "MSC", "iw_vol": 49.0, "ow_vol": 34.0, "inst_vol": 1267.0, "total_vol": 1350.0, "iw_nps_overall": 100.0, "iw_nps_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0], "ow_nps_overall": 0.0, "ow_nps_monthly": [0.0, -100.0, 0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 94.3, "ii_nps_gen_monthly": [92.0, 92.0, 90.9, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_vd_overall": 93.8, "ii_nps_vd_monthly": [87.5, 100.0, 81.8, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_ha_overall": 94.6, "ii_nps_ha_monthly": [100.0, 75.0, 100.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_ac_overall": 100.0, "ii_nps_ac_monthly": [100.0, 0.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 5.6, "rrr_gen_monthly": [0.0, 11.3, 8.5, 0.0, 5.3, 0.0, 0.0, 0.0, 0.0], "rrr_vd_overall": 2.0, "rrr_vd_monthly": [0.0, 0.0, 7.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 6.7, "rrr_da_monthly": [0.0, 13.5, 9.1, 0.0, 8.3, 0.0, 0.0, 0.0, 0.0]}, {"asc_no": "3368206", "asc_name": "KAHYAOĞLU ELEKTRONİK", "city": "KÜTAHYA", "svc_type": "MSC", "iw_vol": 13.0, "ow_vol": 15.0, "inst_vol": 461.0, "total_vol": 489.0, "iw_nps_overall": 100.0, "iw_nps_monthly": [100.0, 0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ow_nps_overall": -100.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, -100.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 96.9, "ii_nps_gen_monthly": [86.7, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_vd_overall": 93.8, "ii_nps_vd_monthly": [80.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_ha_overall": 100.0, "ii_nps_ha_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_ac_overall": 100.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 9.4, "rrr_gen_monthly": [0.0, 0.0, 20.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 10.4, "rrr_da_monthly": [0.0, 0.0, 22.7, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, {"asc_no": "3389040", "asc_name": "YİĞİT ELEKTRONİK", "city": "MANİSA", "svc_type": "MSC", "iw_vol": 17.0, "ow_vol": 20.0, "inst_vol": 845.0, "total_vol": 882.0, "iw_nps_overall": 100.0, "iw_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0], "ow_nps_overall": 0.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 70.5, "ii_nps_gen_monthly": [81.8, 66.7, 100.0, 83.3, 100.0, 33.3, 54.5, -100.0, 66.7], "ii_nps_vd_overall": 84.0, "ii_nps_vd_monthly": [60.0, 100.0, 100.0, 100.0, 100.0, 33.3, 100.0, 0.0, 100.0], "ii_nps_ha_overall": 90.0, "ii_nps_ha_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, -100.0, 100.0, 0.0, 100.0], "ii_nps_ac_overall": 48.5, "ii_nps_ac_monthly": [80.0, 33.3, 0.0, 75.0, 0.0, 50.0, 16.7, -100.0, 0.0], "rrr_gen_overall": 25.0, "rrr_gen_monthly": [22.4, 0.0, 0.0, 64.3, 0.0, 11.1, 14.3, 20.0, 40.0], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 28.0, "rrr_da_monthly": [27.5, 0.0, 0.0, 64.3, 0.0, 11.1, 14.3, 20.0, 40.0]}, {"asc_no": "3368549", "asc_name": "UĞUR TİCARET", "city": "MANİSA", "svc_type": "MSC", "iw_vol": 25.0, "ow_vol": 100.0, "inst_vol": 600.0, "total_vol": 725.0, "iw_nps_overall": 75.0, "iw_nps_monthly": [100.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 0.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 100.0], "ii_nps_gen_overall": 96.4, "ii_nps_gen_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 75.0, 100.0, 100.0], "ii_nps_vd_overall": 100.0, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 100.0, 100.0, 0.0], "ii_nps_ha_overall": 100.0, "ii_nps_ha_monthly": [100.0, 0.0, 0.0, 100.0, 0.0, 100.0, 0.0, 100.0, 100.0], "ii_nps_ac_overall": 93.1, "ii_nps_ac_monthly": [0.0, 100.0, 0.0, 100.0, 100.0, 100.0, 71.4, 100.0, 0.0], "rrr_gen_overall": 14.0, "rrr_gen_monthly": [0.0, 4.2, 0.0, 0.0, 28.6, 56.0, 5.3, 9.1, 0.0], "rrr_vd_overall": 14.3, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 16.7, 0.0, 0.0, 0.0], "rrr_da_overall": 14.0, "rrr_da_monthly": [0.0, 4.2, 0.0, 0.0, 28.6, 68.4, 5.3, 9.1, 0.0]}, {"asc_no": "3463552", "asc_name": "SALİHLİ TEKNİK", "city": "MANİSA", "svc_type": "MSC", "iw_vol": 100.0, "ow_vol": 94.0, "inst_vol": 1398.0, "total_vol": 1592.0, "iw_nps_overall": 31.6, "iw_nps_monthly": [-20.0, 100.0, 100.0, 0.0, 33.3, 100.0, 50.0, -100.0, 0.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 100.0, 100.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 93.8, "ii_nps_gen_monthly": [92.3, 86.7, 100.0, 100.0, 100.0, 100.0, 100.0, 75.0, 100.0], "ii_nps_vd_overall": 93.8, "ii_nps_vd_monthly": [100.0, 83.3, 100.0, 100.0, 100.0, 100.0, 100.0, 85.7, 100.0], "ii_nps_ha_overall": 95.5, "ii_nps_ha_monthly": [80.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0], "ii_nps_ac_overall": 92.6, "ii_nps_ac_monthly": [100.0, 100.0, 0.0, 100.0, 100.0, 100.0, 100.0, 50.0, 100.0], "rrr_gen_overall": 20.7, "rrr_gen_monthly": [30.4, 14.1, 3.2, 2.4, 0.0, 13.9, 11.9, 33.3, 41.5], "rrr_vd_overall": 23.5, "rrr_vd_monthly": [17.1, 15.0, 0.0, 0.0, 0.0, 0.0, 11.1, 62.5, 40.0], "rrr_da_overall": 20.2, "rrr_da_monthly": [33.7, 13.7, 3.4, 2.4, 0.0, 14.7, 12.2, 27.7, 42.3]}, {"asc_no": "3367303", "asc_name": "ARCAN TEKNİK", "city": "MANİSA", "svc_type": "MSC", "iw_vol": 53.0, "ow_vol": 88.0, "inst_vol": 651.0, "total_vol": 792.0, "iw_nps_overall": 100.0, "iw_nps_monthly": [100.0, 0.0, 0.0, 100.0, 100.0, 100.0, 100.0, 0.0, 100.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 0.0, 100.0, 100.0, 0.0, 0.0, 100.0, 0.0, 0.0], "ii_nps_gen_overall": 85.5, "ii_nps_gen_monthly": [100.0, 100.0, 100.0, 75.0, 100.0, 66.7, 77.8, 100.0, 100.0], "ii_nps_vd_overall": 75.0, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 0.0, -100.0, 0.0, 0.0], "ii_nps_ha_overall": 88.2, "ii_nps_ha_monthly": [100.0, 100.0, 0.0, 100.0, 100.0, 100.0, 50.0, 100.0, 100.0], "ii_nps_ac_overall": 86.7, "ii_nps_ac_monthly": [100.0, 100.0, 0.0, 60.0, 100.0, 60.0, 100.0, 100.0, 0.0], "rrr_gen_overall": 14.7, "rrr_gen_monthly": [0.0, 23.8, 0.0, 7.7, 17.9, 0.0, 2.3, 12.5, 65.7], "rrr_vd_overall": 25.6, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 30.0, 77.8], "rrr_da_overall": 13.0, "rrr_da_monthly": [0.0, 23.8, 0.0, 8.3, 20.0, 0.0, 2.9, 7.9, 61.5]}, {"asc_no": "8322760", "asc_name": "CADDE TEKNOLOJİ", "city": "MANİSA", "svc_type": "MSC", "iw_vol": 0.0, "ow_vol": 0.0, "inst_vol": 0.0, "total_vol": 0.0, "iw_nps_overall": 0.0, "iw_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ow_nps_overall": 0.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 0.0, "ii_nps_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_vd_overall": 0.0, "ii_nps_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ha_overall": 0.0, "ii_nps_ha_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ac_overall": 0.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 0.0, "rrr_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 0.0, "rrr_da_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, {"asc_no": "4414282", "asc_name": "SALİHLİ TEKNİK", "city": "MANİSA", "svc_type": "MSC", "iw_vol": 76.0, "ow_vol": 49.0, "inst_vol": 1128.0, "total_vol": 1253.0, "iw_nps_overall": 100.0, "iw_nps_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 0.0], "ow_nps_overall": 50.0, "ow_nps_monthly": [0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 87.3, "ii_nps_gen_monthly": [70.0, 100.0, 100.0, 85.7, 100.0, 94.1, 100.0, 0.0, 75.0], "ii_nps_vd_overall": 91.3, "ii_nps_vd_monthly": [33.3, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 100.0], "ii_nps_ha_overall": 90.0, "ii_nps_ha_monthly": [85.7, 100.0, 100.0, 66.7, 100.0, 85.7, 100.0, 100.0, 100.0], "ii_nps_ac_overall": 78.9, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 100.0, 100.0, 100.0, 100.0, -100.0, 0.0], "rrr_gen_overall": 9.6, "rrr_gen_monthly": [13.2, 0.0, 0.0, 0.0, 4.1, 3.0, 9.8, 11.8, 27.4], "rrr_vd_overall": 25.0, "rrr_vd_monthly": [18.2, 0.0, 0.0, 0.0, 0.0, 0.0, 16.7, 25.0, 40.0], "rrr_da_overall": 5.1, "rrr_da_monthly": [11.1, 0.0, 0.0, 0.0, 4.3, 3.1, 7.0, 4.2, 15.9]}, {"asc_no": "3368556", "asc_name": "YEREKER ELEKTRONİK", "city": "MUĞLA", "svc_type": "MSC", "iw_vol": 180.0, "ow_vol": 204.0, "inst_vol": 2517.0, "total_vol": 2901.0, "iw_nps_overall": 78.9, "iw_nps_monthly": [100.0, 100.0, 100.0, 33.3, 50.0, 50.0, 100.0, 0.0, 0.0], "ow_nps_overall": 0.0, "ow_nps_monthly": [0.0, 100.0, -100.0, 100.0, 0.0, 0.0, -100.0, 0.0, 0.0], "ii_nps_gen_overall": 94.5, "ii_nps_gen_monthly": [100.0, 83.3, 100.0, 84.2, 91.7, 97.1, 95.5, 100.0, 100.0], "ii_nps_vd_overall": 94.2, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 75.0, 100.0, 90.9, 100.0, 100.0, 100.0], "ii_nps_ha_overall": 89.8, "ii_nps_ha_monthly": [100.0, 66.7, 100.0, 100.0, 80.0, 100.0, 87.5, 100.0, 100.0], "ii_nps_ac_overall": 98.4, "ii_nps_ac_monthly": [100.0, 100.0, 100.0, 83.3, 100.0, 100.0, 100.0, 100.0, 100.0], "rrr_gen_overall": 17.7, "rrr_gen_monthly": [3.8, 13.4, 17.5, 12.8, 30.4, 11.2, 22.2, 22.0, 25.5], "rrr_vd_overall": 15.3, "rrr_vd_monthly": [0.0, 20.7, 0.0, 8.1, 38.6, 13.2, 5.0, 5.9, 27.8], "rrr_da_overall": 18.5, "rrr_da_monthly": [4.5, 10.3, 20.0, 17.5, 26.4, 10.1, 24.2, 24.8, 24.3]}, {"asc_no": "1906804", "asc_name": "KARDEŞLER SOĞUTMA", "city": "MUĞLA", "svc_type": "MSC", "iw_vol": 93.0, "ow_vol": 337.0, "inst_vol": 1341.0, "total_vol": 1771.0, "iw_nps_overall": 90.0, "iw_nps_monthly": [80.0, 100.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0], "ow_nps_overall": 64.3, "ow_nps_monthly": [0.0, 40.0, 71.4, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 95.3, "ii_nps_gen_monthly": [100.0, 80.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_vd_overall": 100.0, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ha_overall": 86.7, "ii_nps_ha_monthly": [100.0, 60.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ac_overall": 100.0, "ii_nps_ac_monthly": [100.0, 0.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 6.9, "rrr_gen_monthly": [5.0, 4.2, 10.6, 8.2, 13.2, 1.6, 0.0, 0.0, 0.0], "rrr_vd_overall": 8.3, "rrr_vd_monthly": [0.0, 7.5, 0.0, 0.0, 24.3, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 6.5, "rrr_da_monthly": [5.6, 2.9, 11.6, 12.8, 5.6, 2.5, 0.0, 0.0, 0.0]}, {"asc_no": "3367319", "asc_name": "BİRCAN ELEKTRONİK", "city": "MUĞLA", "svc_type": "MSC", "iw_vol": 98.0, "ow_vol": 205.0, "inst_vol": 1694.0, "total_vol": 1997.0, "iw_nps_overall": 81.3, "iw_nps_monthly": [100.0, 50.0, 0.0, 100.0, 100.0, 100.0, 75.0, 50.0, 100.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 100.0, 0.0], "ii_nps_gen_overall": 93.3, "ii_nps_gen_monthly": [94.1, 66.7, 100.0, 100.0, 50.0, 100.0, 94.4, 100.0, 100.0], "ii_nps_vd_overall": 100.0, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 0.0, 100.0, 100.0, 0.0, 0.0], "ii_nps_ha_overall": 86.2, "ii_nps_ha_monthly": [83.3, 50.0, 100.0, 100.0, 50.0, 100.0, 100.0, 100.0, 100.0], "ii_nps_ac_overall": 94.7, "ii_nps_ac_monthly": [100.0, 66.7, 100.0, 100.0, 0.0, 100.0, 92.6, 100.0, 100.0], "rrr_gen_overall": 6.1, "rrr_gen_monthly": [4.8, 3.9, 1.6, 11.4, 11.5, 7.8, 7.1, 2.0, 0.0], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 7.0, "rrr_da_monthly": [6.0, 4.4, 1.6, 11.4, 12.7, 9.3, 7.1, 2.7, 0.0]}, {"asc_no": "2283494", "asc_name": "MRT TEKNİK", "city": "MUĞLA", "svc_type": "MSC", "iw_vol": 222.0, "ow_vol": 600.0, "inst_vol": 4869.0, "total_vol": 5691.0, "iw_nps_overall": 70.7, "iw_nps_monthly": [100.0, 100.0, 50.0, 33.3, 33.3, 66.7, 85.7, 66.7, 0.0], "ow_nps_overall": 64.0, "ow_nps_monthly": [100.0, 66.7, 0.0, 100.0, 100.0, 0.0, 100.0, 100.0, 0.0], "ii_nps_gen_overall": 78.4, "ii_nps_gen_monthly": [100.0, 100.0, 95.0, 100.0, 81.3, 29.4, 75.9, 63.6, 45.5], "ii_nps_vd_overall": 83.5, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 66.7, 33.3, 83.3, 77.8, 66.7], "ii_nps_ha_overall": 82.9, "ii_nps_ha_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 0.0, 100.0], "ii_nps_ac_overall": 68.4, "ii_nps_ac_monthly": [100.0, 100.0, 66.7, 100.0, 100.0, 20.0, 80.0, 77.8, -33.3], "rrr_gen_overall": 7.8, "rrr_gen_monthly": [12.5, 8.0, 8.8, 13.2, 1.2, 0.5, 6.0, 5.6, 25.4], "rrr_vd_overall": 11.7, "rrr_vd_monthly": [3.4, 9.1, 21.4, 5.6, 11.1, 2.4, 0.0, 2.1, 57.1], "rrr_da_overall": 6.8, "rrr_da_monthly": [14.5, 8.0, 0.0, 15.5, 0.0, 0.0, 7.3, 6.6, 0.0]}, {"asc_no": "8222100", "asc_name": "YAMALI ELEKTRONİK", "city": "UŞAK", "svc_type": "MSC", "iw_vol": 161.0, "ow_vol": 276.0, "inst_vol": 2753.0, "total_vol": 3190.0, "iw_nps_overall": 81.0, "iw_nps_monthly": [100.0, -100.0, 100.0, 60.0, 100.0, 100.0, 100.0, 100.0, 0.0], "ow_nps_overall": 83.3, "ow_nps_monthly": [0.0, 100.0, 100.0, 100.0, 0.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 92.7, "ii_nps_gen_monthly": [100.0, 100.0, 76.5, 100.0, 100.0, 94.3, 85.7, 92.3, 71.4], "ii_nps_vd_overall": 95.6, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 94.7, 78.6, 100.0, 100.0], "ii_nps_ha_overall": 86.4, "ii_nps_ha_monthly": [100.0, 100.0, 50.0, 100.0, 100.0, 90.9, 77.8, 100.0, 33.3], "ii_nps_ac_overall": 97.2, "ii_nps_ac_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 50.0, 100.0], "rrr_gen_overall": 4.2, "rrr_gen_monthly": [12.2, 0.0, 0.0, 2.0, 4.5, 3.8, 1.6, 7.1, 0.0], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 5.1, "rrr_da_monthly": [14.1, 0.0, 0.0, 2.4, 4.5, 5.0, 1.8, 9.8, 0.0]}, {"asc_no": "3353952", "asc_name": "YILDIRIM ELEKTRONİK", "city": "ANTALYA", "svc_type": "MSC", "iw_vol": 0.0, "ow_vol": 0.0, "inst_vol": 0.0, "total_vol": 0.0, "iw_nps_overall": 0.0, "iw_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ow_nps_overall": 0.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 0.0, "ii_nps_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_vd_overall": 0.0, "ii_nps_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ha_overall": 0.0, "ii_nps_ha_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ac_overall": 0.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 0.0, "rrr_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 0.0, "rrr_da_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, {"asc_no": "3863417", "asc_name": "ÖZEL SOĞUTMA ISITMA SAN.VE TİC.", "city": "DENİZLİ", "svc_type": "MSC", "iw_vol": 405.0, "ow_vol": 524.0, "inst_vol": 5567.0, "total_vol": 6496.0, "iw_nps_overall": 66.2, "iw_nps_monthly": [100.0, 50.0, 25.0, 20.0, 14.3, 66.7, 50.0, 92.0, 100.0], "ow_nps_overall": 33.3, "ow_nps_monthly": [33.3, 25.0, 33.3, 100.0, 0.0, 0.0, 0.0, 0.0, 100.0], "ii_nps_gen_overall": 81.9, "ii_nps_gen_monthly": [89.7, 83.3, 92.3, 76.2, 89.1, 67.9, 79.1, 75.0, 69.2], "ii_nps_vd_overall": 85.8, "ii_nps_vd_monthly": [76.0, 87.0, 100.0, 84.2, 75.0, 92.9, 92.9, 25.0, 100.0], "ii_nps_ha_overall": 78.4, "ii_nps_ha_monthly": [97.1, 81.8, 78.9, 75.0, 100.0, 35.3, 70.0, 100.0, 33.3], "ii_nps_ac_overall": 79.9, "ii_nps_ac_monthly": [100.0, 75.0, 100.0, 50.0, 92.0, 76.0, 78.8, 83.3, 50.0], "rrr_gen_overall": 7.7, "rrr_gen_monthly": [7.5, 4.7, 10.0, 1.3, 4.3, 13.4, 8.8, 9.0, 7.1], "rrr_vd_overall": 6.1, "rrr_vd_monthly": [0.0, 10.0, 12.1, 0.0, 0.0, 3.6, 10.9, 2.3, 6.9], "rrr_da_overall": 7.9, "rrr_da_monthly": [7.9, 3.8, 9.6, 1.4, 4.7, 15.0, 8.5, 9.7, 7.1]}, {"asc_no": "4305628", "asc_name": "DEMKAR TEKNİK SOĞUTMA", "city": "ISPARTA", "svc_type": "ASC", "iw_vol": 18.0, "ow_vol": 34.0, "inst_vol": 315.0, "total_vol": 367.0, "iw_nps_overall": 77.8, "iw_nps_monthly": [0.0, 100.0, 0.0, 100.0, 100.0, 0.0, 33.3, 100.0, 0.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 100.0, "ii_nps_gen_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0], "ii_nps_vd_overall": 100.0, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 100.0, 100.0, 100.0], "ii_nps_ha_overall": 100.0, "ii_nps_ha_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0], "ii_nps_ac_overall": 100.0, "ii_nps_ac_monthly": [0.0, 0.0, 100.0, 0.0, 0.0, 100.0, 100.0, 0.0, 0.0], "rrr_gen_overall": 27.2, "rrr_gen_monthly": [0.0, 0.0, 75.0, 26.7, 0.0, 50.0, 19.2, 30.2, 22.2], "rrr_vd_overall": 46.9, "rrr_vd_monthly": [0.0, 0.0, 78.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 22.7, "rrr_da_monthly": [0.0, 0.0, 0.0, 28.6, 0.0, 50.0, 19.2, 33.3, 28.6]}, {"asc_no": "4357619", "asc_name": "GENÇ ELEKTRONİK", "city": "BURDUR", "svc_type": "MSC", "iw_vol": 21.0, "ow_vol": 61.0, "inst_vol": 469.0, "total_vol": 551.0, "iw_nps_overall": 100.0, "iw_nps_monthly": [0.0, 0.0, 0.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 0.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 100.0, "ii_nps_gen_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0], "ii_nps_vd_overall": 100.0, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0, 0.0], "ii_nps_ha_overall": 100.0, "ii_nps_ha_monthly": [100.0, 0.0, 100.0, 100.0, 0.0, 100.0, 100.0, 100.0, 100.0], "ii_nps_ac_overall": 100.0, "ii_nps_ac_monthly": [100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 100.0, 100.0], "rrr_gen_overall": 13.0, "rrr_gen_monthly": [0.0, 5.3, 20.0, 23.8, 7.4, 0.0, 17.9, 24.0, 0.0], "rrr_vd_overall": 20.0, "rrr_vd_monthly": [0.0, 12.5, 0.0, 0.0, 0.0, 0.0, 0.0, 42.9, 0.0], "rrr_da_overall": 10.9, "rrr_da_monthly": [0.0, 0.0, 20.0, 27.8, 9.1, 0.0, 19.2, 0.0, 0.0]}, {"asc_no": "4762467", "asc_name": "SAYGIN ELEKTRONİK", "city": "BALIKESİR", "svc_type": "MSC", "iw_vol": 73.0, "ow_vol": 110.0, "inst_vol": 1239.0, "total_vol": 1422.0, "iw_nps_overall": 18.2, "iw_nps_monthly": [100.0, 0.0, 0.0, 0.0, 0.0, -75.0, 100.0, 100.0, 100.0], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 79.6, "ii_nps_gen_monthly": [100.0, 100.0, 80.0, 66.7, 81.8, 88.6, 63.6, 84.6, 42.9], "ii_nps_vd_overall": 85.5, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 0.0, 66.7, 100.0, 81.8, 100.0, 50.0], "ii_nps_ha_overall": 76.7, "ii_nps_ha_monthly": [100.0, 100.0, 60.0, 100.0, 100.0, 80.0, 33.3, 66.7, 0.0], "ii_nps_ac_overall": 74.4, "ii_nps_ac_monthly": [0.0, 100.0, 100.0, 100.0, 100.0, 80.0, 62.5, 100.0, 33.3], "rrr_gen_overall": 19.7, "rrr_gen_monthly": [4.7, 14.0, 7.4, 13.6, 14.5, 40.3, 29.6, 5.6, 41.3], "rrr_vd_overall": 2.7, "rrr_vd_monthly": [11.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 21.9, "rrr_da_monthly": [2.1, 14.3, 7.8, 17.1, 18.2, 41.4, 33.3, 6.8, 43.2]}, {"asc_no": "5793878", "asc_name": "CENGİZLER ISITMA SOĞUTMA", "city": "BURDUR", "svc_type": "MSC", "iw_vol": 50.0, "ow_vol": 153.0, "inst_vol": 924.0, "total_vol": 1127.0, "iw_nps_overall": 72.7, "iw_nps_monthly": [100.0, -100.0, 0.0, 100.0, 100.0, 100.0, 100.0, 0.0, 100.0], "ow_nps_overall": 57.1, "ow_nps_monthly": [0.0, 0.0, 33.3, 100.0, 0.0, 0.0, 0.0, 100.0, 0.0], "ii_nps_gen_overall": 77.9, "ii_nps_gen_monthly": [57.1, 100.0, 100.0, 81.8, 100.0, 66.7, 60.0, 80.0, 100.0], "ii_nps_vd_overall": 78.4, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 60.0, 100.0, 0.0, 60.0, 100.0, 100.0], "ii_nps_ha_overall": 86.7, "ii_nps_ha_monthly": [100.0, 100.0, 100.0, 100.0, 0.0, 0.0, 60.0, 0.0, 0.0], "ii_nps_ac_overall": 72.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 100.0, 0.0, 100.0, 60.0, 60.0, 100.0], "rrr_gen_overall": 18.0, "rrr_gen_monthly": [17.5, 10.0, 17.4, 3.7, 18.5, 9.3, 23.4, 25.3, 15.4], "rrr_vd_overall": 11.7, "rrr_vd_monthly": [0.0, 0.0, 33.3, 0.0, 7.1, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 19.3, "rrr_da_monthly": [25.0, 10.7, 0.0, 4.3, 22.5, 11.1, 25.3, 26.0, 15.4]}, {"asc_no": "5788914", "asc_name": "YILDIRIM ELEKTRONİK", "city": "ANTALYA", "svc_type": "MSC", "iw_vol": 223.0, "ow_vol": 598.0, "inst_vol": 7516.0, "total_vol": 8337.0, "iw_nps_overall": 78.0, "iw_nps_monthly": [60.0, 85.7, 90.0, 100.0, 50.0, 85.7, 100.0, 66.7, -100.0], "ow_nps_overall": 84.6, "ow_nps_monthly": [0.0, 88.2, 66.7, 100.0, 0.0, 0.0, 100.0, 0.0, 0.0], "ii_nps_gen_overall": 95.3, "ii_nps_gen_monthly": [99.4, 95.7, 96.8, 94.3, 92.6, 96.4, 92.1, 95.7, 90.5], "ii_nps_vd_overall": 95.3, "ii_nps_vd_monthly": [99.4, 95.7, 96.8, 94.3, 92.6, 96.4, 92.1, 95.7, 90.5], "ii_nps_ha_overall": 0.0, "ii_nps_ha_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ac_overall": 0.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 0.7, "rrr_gen_monthly": [1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.3], "rrr_vd_overall": 0.7, "rrr_vd_monthly": [1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.3], "rrr_da_overall": 0.0, "rrr_da_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, {"asc_no": "5946483", "asc_name": "DORUKOĞLU TEKNİK ISITMA SİSTEMLERİ", "city": "MUĞLA", "svc_type": "MSC", "iw_vol": 139.0, "ow_vol": 248.0, "inst_vol": 2478.0, "total_vol": 2865.0, "iw_nps_overall": 71.4, "iw_nps_monthly": [33.3, 100.0, 0.0, 0.0, 0.0, 0.0, 100.0, 100.0, 100.0], "ow_nps_overall": 70.0, "ow_nps_monthly": [0.0, 25.0, 100.0, 100.0, 0.0, 0.0, 100.0, 0.0, 0.0], "ii_nps_gen_overall": 96.0, "ii_nps_gen_monthly": [0.0, 0.0, 0.0, 94.4, 100.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_vd_overall": 88.9, "ii_nps_vd_monthly": [0.0, 0.0, 0.0, 85.7, 0.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_ha_overall": 100.0, "ii_nps_ha_monthly": [0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_ac_overall": 100.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 3.6, "rrr_gen_monthly": [2.9, 5.7, 3.2, 1.0, 6.1, 1.0, 5.1, 4.2, 4.2], "rrr_vd_overall": 15.6, "rrr_vd_monthly": [0.0, 40.0, 22.2, 0.0, 20.0, 11.1, 0.0, 0.0, 0.0], "rrr_da_overall": 2.5, "rrr_da_monthly": [2.9, 0.0, 0.0, 1.1, 0.0, 0.0, 5.6, 4.4, 4.2]}, {"asc_no": "6467552", "asc_name": "ERGÜN ÖRDEK - ER ELEKTRONİK", "city": "BALIKESİR", "svc_type": "MSC", "iw_vol": 185.0, "ow_vol": 255.0, "inst_vol": 3445.0, "total_vol": 3885.0, "iw_nps_overall": 71.9, "iw_nps_monthly": [100.0, 66.7, 0.0, 100.0, 20.0, 100.0, 62.5, 100.0, 100.0], "ow_nps_overall": 70.6, "ow_nps_monthly": [0.0, 100.0, 50.0, 100.0, 100.0, 0.0, 100.0, 100.0, 0.0], "ii_nps_gen_overall": 78.4, "ii_nps_gen_monthly": [100.0, 88.2, 88.9, 86.7, 81.3, 60.7, 76.9, 90.5, 11.1], "ii_nps_vd_overall": 85.7, "ii_nps_vd_monthly": [100.0, 100.0, 71.4, 100.0, 66.7, 100.0, 100.0, 50.0, 0.0], "ii_nps_ha_overall": 84.1, "ii_nps_ha_monthly": [100.0, 60.0, 71.4, 100.0, 100.0, 87.5, 100.0, 100.0, 0.0], "ii_nps_ac_overall": 68.0, "ii_nps_ac_monthly": [100.0, 100.0, 100.0, 66.7, 80.0, 44.4, 60.0, 100.0, 20.0], "rrr_gen_overall": 7.5, "rrr_gen_monthly": [9.7, 1.5, 5.6, 16.5, 7.2, 3.7, 12.9, 0.0, 10.0], "rrr_vd_overall": 1.3, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 5.6, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 8.4, "rrr_da_monthly": [11.1, 1.7, 6.0, 18.2, 7.8, 4.3, 13.6, 0.0, 11.1]}, {"asc_no": "7074546", "asc_name": "OSMAN KAPLAN KAPLAN GRUP", "city": "ISPARTA", "svc_type": "MSC", "iw_vol": 172.0, "ow_vol": 198.0, "inst_vol": 1933.0, "total_vol": 2303.0, "iw_nps_overall": 82.5, "iw_nps_monthly": [60.0, 100.0, 100.0, 71.4, 100.0, 80.0, 71.4, 100.0, 100.0], "ow_nps_overall": 83.3, "ow_nps_monthly": [0.0, 33.3, 100.0, 100.0, 0.0, 100.0, 0.0, 100.0, 0.0], "ii_nps_gen_overall": 100.0, "ii_nps_gen_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0], "ii_nps_vd_overall": 100.0, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0], "ii_nps_ha_overall": 100.0, "ii_nps_ha_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0], "ii_nps_ac_overall": 100.0, "ii_nps_ac_monthly": [100.0, 0.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 0.0], "rrr_gen_overall": 6.2, "rrr_gen_monthly": [10.6, 4.8, 4.3, 0.0, 3.7, 6.9, 10.4, 4.2, 5.6], "rrr_vd_overall": 8.4, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 21.7, 0.0, 12.5], "rrr_da_overall": 5.8, "rrr_da_monthly": [11.3, 6.1, 4.3, 0.0, 4.2, 7.1, 7.6, 5.1, 0.0]}, {"asc_no": "7081136", "asc_name": "KARAYEL ELEKTRONİK LİMİTED ŞİRKETİ", "city": "MANİSA", "svc_type": "MSC", "iw_vol": 224.0, "ow_vol": 173.0, "inst_vol": 2605.0, "total_vol": 3002.0, "iw_nps_overall": 25.7, "iw_nps_monthly": [33.3, 25.0, 100.0, 66.7, 0.0, 33.3, 11.1, 0.0, -100.0], "ow_nps_overall": -18.2, "ow_nps_monthly": [-100.0, -75.0, 0.0, 100.0, 0.0, 100.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 80.8, "ii_nps_gen_monthly": [88.9, 100.0, 92.0, 88.2, 95.7, 56.3, 71.0, 85.3, 100.0], "ii_nps_vd_overall": 91.9, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 86.7, 77.3, 87.5, 100.0], "ii_nps_ha_overall": 83.1, "ii_nps_ha_monthly": [66.7, 100.0, 75.0, 60.0, 92.3, 62.5, 90.0, 92.3, 100.0], "ii_nps_ac_overall": 59.1, "ii_nps_ac_monthly": [100.0, 100.0, 100.0, 0.0, 100.0, 23.5, 60.0, 60.0, 100.0], "rrr_gen_overall": 17.4, "rrr_gen_monthly": [2.8, 1.0, 3.4, 14.0, 20.6, 30.0, 27.9, 15.7, 7.1], "rrr_vd_overall": 11.4, "rrr_vd_monthly": [0.0, 0.0, 0.0, 20.0, 0.0, 0.0, 24.3, 33.3, 0.0], "rrr_da_overall": 17.9, "rrr_da_monthly": [3.3, 1.1, 3.5, 13.7, 21.3, 31.4, 28.5, 15.4, 7.1]}, {"asc_no": "7115012", "asc_name": "MURAT SOĞUTMA (Branch)", "city": "AYDIN", "svc_type": "MSC", "iw_vol": 55.0, "ow_vol": 88.0, "inst_vol": 1243.0, "total_vol": 1386.0, "iw_nps_overall": 60.0, "iw_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 33.3], "ow_nps_overall": 100.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 100.0], "ii_nps_gen_overall": 71.7, "ii_nps_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 62.1, 61.9, 100.0], "ii_nps_vd_overall": 75.0, "ii_nps_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 72.7, 40.0, 100.0], "ii_nps_ha_overall": 65.4, "ii_nps_ha_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 58.3, 33.3, 0.0], "ii_nps_ac_overall": 73.2, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 60.0, 90.0, 100.0], "rrr_gen_overall": 12.5, "rrr_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 16.3, 11.4, 11.6, 13.6], "rrr_vd_overall": 9.1, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 17.9, 0.0, 0.0], "rrr_da_overall": 13.0, "rrr_da_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 17.7, 10.2, 11.7, 18.8]}, {"asc_no": "7099116", "asc_name": "TOPRAK BEYAZ EŞYA SANAYİ VE TİCARET LİMİTED ŞİRKETİ", "city": "MUĞLA", "svc_type": "MSC", "iw_vol": 43.0, "ow_vol": 120.0, "inst_vol": 1336.0, "total_vol": 1499.0, "iw_nps_overall": 75.0, "iw_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 100.0, 0.0], "ow_nps_overall": 0.0, "ow_nps_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 90.0, "ii_nps_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 75.0, 100.0, 100.0, 0.0], "ii_nps_vd_overall": 84.6, "ii_nps_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 66.7, 100.0, 0.0, 0.0], "ii_nps_ha_overall": 100.0, "ii_nps_ha_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 100.0, 0.0], "ii_nps_ac_overall": 100.0, "ii_nps_ac_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0], "rrr_gen_overall": 13.3, "rrr_gen_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.2, 13.5, 12.4], "rrr_vd_overall": 2.7, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6.7, 0.0], "rrr_da_overall": 15.3, "rrr_da_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 16.8, 15.0, 15.4]}, {"asc_no": "3153427", "asc_name": "ZEUS TEKNİK MAKİNE ITH. IHR. SAN.", "city": "AYDIN", "svc_type": "MSC", "iw_vol": 112.0, "ow_vol": 231.0, "inst_vol": 2005.0, "total_vol": 2348.0, "iw_nps_overall": 68.0, "iw_nps_monthly": [0.0, 100.0, 100.0, 75.0, 100.0, 100.0, 40.0, 60.0, 100.0], "ow_nps_overall": 83.3, "ow_nps_monthly": [0.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0], "ii_nps_gen_overall": 89.2, "ii_nps_gen_monthly": [100.0, 100.0, 100.0, 100.0, 90.9, 78.3, 77.8, 84.2, 100.0], "ii_nps_vd_overall": 91.2, "ii_nps_vd_monthly": [100.0, 100.0, 100.0, 100.0, 66.7, 66.7, 100.0, 100.0, 100.0], "ii_nps_ha_overall": 97.9, "ii_nps_ha_monthly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 80.0, 100.0], "ii_nps_ac_overall": 82.1, "ii_nps_ac_monthly": [100.0, 0.0, 100.0, 100.0, 100.0, 71.4, 62.5, 80.0, 100.0], "rrr_gen_overall": 3.9, "rrr_gen_monthly": [0.0, 0.0, 0.0, 9.9, 9.5, 2.8, 5.2, 2.7, 0.0], "rrr_vd_overall": 0.0, "rrr_vd_monthly": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "rrr_da_overall": 4.2, "rrr_da_monthly": [0.0, 0.0, 0.0, 10.7, 12.9, 2.8, 5.2, 2.9, 0.0]}];
+        const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül'];
+
+        let iwOwChart, rrrChart, iiChart;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            populateCityDropdown();
+            populateServiceDropdown();
+            initCharts();
+            applyFilters();
+        });
+
+        function populateCityDropdown() {
+            const cities = [...new Set(rawData.map(r => r.city))].sort();
+            const cityFilter = document.getElementById('cityFilter');
+            cities.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                cityFilter.appendChild(opt);
+            });
+        }
+
+        function populateServiceDropdown() {
+            const selectedCity = document.getElementById('cityFilter').value;
+            const serviceFilter = document.getElementById('serviceFilter');
+            serviceFilter.innerHTML = '<option value="ALL">Tüm Servisler</option>';
+
+            const filtered = selectedCity === 'ALL' 
+                ? rawData 
+                : rawData.filter(r => r.city === selectedCity);
+
+            filtered.sort((a,b) => a.asc_name.localeCompare(b.asc_name)).forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.asc_no;
+                opt.textContent = `${s.asc_name} (${s.city})`;
+                serviceFilter.appendChild(opt);
+            });
+        }
+
+        function onCityChange() {
+            populateServiceDropdown();
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const city = document.getElementById('cityFilter').value;
+            const serviceNo = document.getElementById('serviceFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            let data = rawData.filter(r => {
+                if (city !== 'ALL' && r.city !== city) return false;
+                if (serviceNo !== 'ALL' && r.asc_no !== serviceNo) return false;
+                if (search && !r.asc_name.toLowerCase().includes(search) && !r.asc_no.includes(search)) return false;
+                return true;
+            });
+
+            updateKPIs(data);
+            updateTable(data);
+            updateCharts(data);
+        }
+
+        function resetFilters() {
+            document.getElementById('cityFilter').value = 'ALL';
+            populateServiceDropdown();
+            document.getElementById('serviceFilter').value = 'ALL';
+            document.getElementById('searchInput').value = '';
+            applyFilters();
+        }
+
+        function avgArr(arr) {
+            if (!arr || arr.length === 0) return 0;
+            return (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1);
+        }
+
+        function updateKPIs(data) {
+            const count = data.length;
+            
+            const iwNps = count ? avgArr(data.map(r => r.iw_nps_overall)) : 0;
+            const owNps = count ? avgArr(data.map(r => r.ow_nps_overall)) : 0;
+            const iiGen = count ? avgArr(data.map(r => r.ii_nps_gen_overall)) : 0;
+            const iiVd = count ? avgArr(data.map(r => r.ii_nps_vd_overall)) : 0;
+            const iiHa = count ? avgArr(data.map(r => r.ii_nps_ha_overall)) : 0;
+            const iiAc = count ? avgArr(data.map(r => r.ii_nps_ac_overall)) : 0;
+            const rrrGen = count ? avgArr(data.map(r => r.rrr_gen_overall)) : 0;
+
+            document.getElementById('kpiServiceCount').textContent = count;
+            document.getElementById('kpiIwNps').textContent = iwNps + '%';
+            document.getElementById('kpiOwNps').textContent = owNps + '%';
+            document.getElementById('kpiIiNpsGen').textContent = iiGen + '%';
+            document.getElementById('kpiIiNpsVd').textContent = iiVd + '%';
+            document.getElementById('kpiIiNpsHa').textContent = iiHa + '%';
+            document.getElementById('kpiIiNpsAc').textContent = iiAc + '%';
+            document.getElementById('kpiRrrGen').textContent = rrrGen + '%';
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            document.getElementById('tableRecordCount').textContent = `${data.length} kayıt gösteriliyor`;
+
+            data.forEach(r => {
+                const tr = document.createElement('tr');
+                const getPerfClass = (p) => p >= 85 ? 'perf-high' : p >= 70 ? 'perf-mid' : 'perf-low';
+                const getRrrClass = (p) => p <= 8 ? 'perf-high' : p <= 12 ? 'perf-mid' : 'perf-low';
+
+                tr.innerHTML = `
+                    <td><strong>${r.asc_no}</strong></td>
+                    <td>${r.asc_name}</td>
+                    <td>${r.city}</td>
+                    <td><span class="badge ${r.svc_type === 'MSC' ? 'badge-msc' : 'badge-asc'}">${r.svc_type}</span></td>
+                    <td><strong>${r.total_vol.toLocaleString('tr-TR')}</strong></td>
+                    <td class="${getPerfClass(r.iw_nps_overall)}">%${r.iw_nps_overall}</td>
+                    <td class="${getPerfClass(r.ow_nps_overall)}">%${r.ow_nps_overall}</td>
+                    <td class="${getPerfClass(r.ii_nps_gen_overall)}">%${r.ii_nps_gen_overall}</td>
+                    <td class="${getPerfClass(r.ii_nps_vd_overall)}">%${r.ii_nps_vd_overall}</td>
+                    <td class="${getPerfClass(r.ii_nps_ha_overall)}">%${r.ii_nps_ha_overall}</td>
+                    <td class="${getPerfClass(r.ii_nps_ac_overall)}">%${r.ii_nps_ac_overall}</td>
+                    <td class="${getRrrClass(r.rrr_gen_overall)}">%${r.rrr_gen_overall}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function initCharts() {
+            // 1. IW vs OW NPS
+            const ctx1 = document.getElementById('iwOwNpsChart').getContext('2d');
+            iwOwChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        { label: 'IW NPS (%)', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3, borderWidth: 3 },
+                        { label: 'OW NPS (%)', data: [], borderColor: '#f59e0b', backgroundColor: 'transparent', tension: 0.3, borderWidth: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { max: 100, min: 0 } },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+
+            // 2. RRR Chart
+            const ctx2 = document.getElementById('rrrChart').getContext('2d');
+            rrrChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        { label: 'RRR Genel (%)', data: [], borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3, borderWidth: 3 },
+                        { label: 'RRR VD (%)', data: [], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
+                        { label: 'RRR DA (%)', data: [], borderColor: '#8b5cf6', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 0 } },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+
+            // 3. II NPS Chart (Products)
+            const ctx3 = document.getElementById('iiNpsChart').getContext('2d');
+            iiChart = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        { label: 'II NPS Genel (%)', data: [], borderColor: '#1e3a8a', backgroundColor: 'transparent', tension: 0.3, borderWidth: 3 },
+                        { label: 'II NPS - VD (Görüntü) (%)', data: [], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
+                        { label: 'II NPS - HA (Ev Aletleri) (%)', data: [], borderColor: '#10b981', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
+                        { label: 'II NPS - AC (Klima) (%)', data: [], borderColor: '#f59e0b', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { max: 100, min: 50 } },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+
+        function getMonthlyAvg(data, key) {
+            const result = Array(9).fill(0);
+            if (!data.length) return result;
+            for (let i = 0; i < 9; i++) {
+                const sum = data.reduce((s, r) => s + (r[key][i] || 0), 0);
+                result[i] = +(sum / data.length).toFixed(1);
+            }
+            return result;
+        }
+
+        function updateCharts(data) {
+            // 1. IW vs OW NPS
+            iwOwChart.data.datasets[0].data = getMonthlyAvg(data, 'iw_nps_monthly');
+            iwOwChart.data.datasets[1].data = getMonthlyAvg(data, 'ow_nps_monthly');
+            iwOwChart.update();
+
+            // 2. RRR
+            rrrChart.data.datasets[0].data = getMonthlyAvg(data, 'rrr_gen_monthly');
+            rrrChart.data.datasets[1].data = getMonthlyAvg(data, 'rrr_vd_monthly');
+            rrrChart.data.datasets[2].data = getMonthlyAvg(data, 'rrr_da_monthly');
+            rrrChart.update();
+
+            // 3. II NPS
+            iiChart.data.datasets[0].data = getMonthlyAvg(data, 'ii_nps_gen_monthly');
+            iiChart.data.datasets[1].data = getMonthlyAvg(data, 'ii_nps_vd_monthly');
+            iiChart.data.datasets[2].data = getMonthlyAvg(data, 'ii_nps_ha_monthly');
+            iiChart.data.datasets[3].data = getMonthlyAvg(data, 'ii_nps_ac_monthly');
+            iiChart.update();
+        }
+    </script>
+</body>
+</html>
